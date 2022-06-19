@@ -19,7 +19,8 @@ class BaseCF(tf.Model):
             dict: Default hyperparameters
         """
         return {
-            "emb_l2_reg_lambda": 1e-5
+            "emb_l2_reg_lambda": 1e-5,
+            "rmse_lambda": 1e-5,
         }
 
     def set_hyperparams(self, hyperparams: dict):
@@ -33,6 +34,7 @@ class BaseCF(tf.Model):
             setattr(self, hyperparam, value)
 
     def create_variables(self):
+        """Initializes the required variables"""
         initializer = tf.initializers.glorot_uniform()
         # Create embeddings
         self.user_embedding = tf.Variable(initializer((self.n_users, self.user_emb_size)), name="user_embedding")
@@ -65,3 +67,13 @@ class BaseCF(tf.Model):
         reg_loss = l2_loss(users) + l2_loss(positive_items) + l2_loss(negative_items)
         reg_loss = reg_loss / self.batch_size * self.emb_l2_reg_lambda
         return reg_loss
+    
+    def rmse_loss(self, user_items_truth, user_items_pred, mask):
+        """Calculates RMSE loss for the predicted matrix factorization
+
+        Args:
+            user_items_truth (_type_): User item matrix (ground truth)
+            user_items_pred (_type_): User item matrix (predicted)
+            mask (_type_): Mask denoting, user_item relationship that is found in dataset.
+        """
+        return tf.sqrt(tf.reduce_mean((user_items_truth - user_items_pred) * mask)) * self.rmse_lambda
