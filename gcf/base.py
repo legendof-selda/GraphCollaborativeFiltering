@@ -9,7 +9,11 @@ class BaseCF(tf.Model):
         self.user_emb_size = user_emb_size
         self.item_emb_size = item_emb_size
         self.batch_size = batch_size
+
         self.set_hyperparams(hyperparams)
+
+        self.create_variables()
+        self.init_optimizer()
 
     @property
     def default_hyperparams(self) -> dict:
@@ -21,6 +25,7 @@ class BaseCF(tf.Model):
         return {
             "emb_l2_reg_lambda": 1e-5,
             "rmse_lambda": 1e-5,
+            "lr": 0.01
         }
 
     def set_hyperparams(self, hyperparams: dict):
@@ -35,10 +40,10 @@ class BaseCF(tf.Model):
 
     def create_variables(self):
         """Initializes the required variables"""
-        initializer = tf.initializers.glorot_uniform()
+        self.initializer = tf.initializers.glorot_uniform()
         # Create embeddings
-        self.user_embedding = tf.Variable(initializer((self.n_users, self.user_emb_size)), name="user_embedding")
-        self.item_embedding = tf.Variable(initializer((self.n_items, self.item_emb_size)), name="item_embedding")
+        self.user_embedding = tf.Variable(self.initializer((self.n_users, self.user_emb_size)), name="user_embedding")
+        self.item_embedding = tf.Variable(self.initializer((self.n_items, self.item_emb_size)), name="item_embedding")
 
     def bpr_loss(self, users, positive_items, negative_items):
         """Bayesian Personalization Ranking (BPF) loss.
@@ -67,7 +72,7 @@ class BaseCF(tf.Model):
         reg_loss = l2_loss(users) + l2_loss(positive_items) + l2_loss(negative_items)
         reg_loss = reg_loss / self.batch_size * self.emb_l2_reg_lambda
         return reg_loss
-    
+
     def rmse_loss(self, user_items_truth, user_items_pred, mask):
         """Calculates RMSE loss for the predicted matrix factorization
 
@@ -77,3 +82,12 @@ class BaseCF(tf.Model):
             mask (_type_): Mask denoting, user_item relationship that is found in dataset.
         """
         return tf.sqrt(tf.reduce_mean((user_items_truth - user_items_pred) * mask)) * self.rmse_lambda
+
+    def loss(self):
+        """Compute total loss used for optimizer minimize function"""
+        raise NotImplementedError("Create loss function for optimizer")
+
+    def init_optimizer(self):
+        """Initialize Optimizer"""
+        self.optimizer = tf.optimizers.Adam(learning_rate=self.lr)
+        self.opt_minimize = self.optimizer.minimize(self.loss, tf.trainable_variables())
