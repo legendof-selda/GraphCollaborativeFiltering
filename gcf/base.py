@@ -25,6 +25,7 @@ class BaseCF(tf.Model):
 
         self.set_hyperparams(hyperparams)
 
+        self.define_inputs()
         self.create_variables()
         self.init_optimizer()
 
@@ -53,6 +54,7 @@ class BaseCF(tf.Model):
             setattr(self, hyperparam, value)
 
     def define_inputs(self):
+        """Define all inputs/placeholders for the model"""
         self.cat_adj = tfph(
             dtype=tf.int32,
             shape=(self.n_cat, self.n_cat),
