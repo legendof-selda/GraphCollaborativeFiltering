@@ -2,6 +2,12 @@ from .base import BaseCF
 
 
 class NGCF(BaseCF):
+    """
+    This implementation of collbarative filtering is based on
+    https://dl.acm.org/doi/10.1145/3331184.3331267
+    https://github.com/xiangwang1223/neural_graph_collaborative_filtering
+    """
+
     def __init__(
         self,
         n_users,
